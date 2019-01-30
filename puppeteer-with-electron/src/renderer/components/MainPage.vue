@@ -2,6 +2,9 @@
   <div>
     <h1>Screenshot</h1>
     <el-row>
+      <el-alert type="error" :title="message" v-if="message"></el-alert>
+    </el-row>
+    <el-row>
       <el-col :span="18">
         <el-input v-model="url" placeholder="URL">
         </el-input>
@@ -24,7 +27,8 @@
       return {
         url: 'http://',
         isLoading: false,
-        folderPath: ''
+        folderPath: '',
+        message: ''
       }
     },
     methods: {
@@ -38,14 +42,26 @@
         })
       },
       async screenshot () {
-        // puppeteer api.
-        this.isLoading = true
-        const browser = await puppeteer.launch()
-        const page = await browser.newPage()
-        await page.goto(this.url)
-        await page.screenshot({path: this.folderPath + '/screenshot.png', fullPage: true})
-        await browser.close()
-        this.isLoading = false
+        try {
+          // puppeteer api.
+          this.isLoading = true
+          const browser = await puppeteer.launch({
+            headless: true,
+            executablePath: puppeteer.executablePath().replace('app.asar', 'app.asar.unpacked'),
+            args: [
+              '--no-sandbox',
+              '--disable-setuid-sandbox'
+            ]
+          })
+          const page = await browser.newPage()
+          await page.goto(this.url)
+          await page.screenshot({path: this.folderPath + '/screenshot.png', fullPage: true})
+          await browser.close()
+        } catch (e) {
+          this.message = e.toString()
+        } finally {
+          this.isLoading = false
+        }
       }
     }
   }
